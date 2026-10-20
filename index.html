@@ -1,0 +1,310 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FreshMart - Toko Sembako</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #f2f5f7;
+    margin: 0;
+    color: #263238;
+}
+
+header {
+    background: #087f5b;
+    color: white;
+    padding: 24px;
+    text-align: center;
+}
+
+.container {
+    max-width: 950px;
+    margin: 25px auto;
+    padding: 15px;
+}
+
+.summary {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.card {
+    background: white;
+    padding: 18px;
+    border-radius: 10px;
+    flex: 1;
+    box-shadow: 0 2px 7px #00000010;
+}
+
+.card h3 {
+    margin-top: 0;
+    font-size: 15px;
+}
+
+.card p {
+    font-size: 22px;
+    font-weight: bold;
+    color: #087f5b;
+    margin-bottom: 0;
+}
+
+h2 {
+    font-size: 20px;
+}
+
+.products {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 15px;
+}
+
+.product {
+    background: white;
+    padding: 18px;
+    border-radius: 10px;
+    box-shadow: 0 2px 7px #00000010;
+}
+
+.product h3 {
+    margin-top: 0;
+}
+
+.price {
+    color: #087f5b;
+    font-weight: bold;
+}
+
+input, button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 8px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
+
+button {
+    background: #087f5b;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #066747;
+}
+
+button:disabled {
+    background: #999;
+    cursor: not-allowed;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    margin-top: 15px;
+}
+
+th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+th {
+    background: #dff5e9;
+}
+
+.message {
+    margin-top: 15px;
+    font-weight: bold;
+}
+
+@media (max-width: 600px) {
+    .summary {
+        flex-direction: column;
+    }
+
+    table {
+        font-size: 13px;
+    }
+
+    th, td {
+        padding: 8px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>FreshMart</h1>
+    <p>Sistem Penjualan dan Pengelolaan Stok Sembako</p>
+</header>
+
+<div class="container">
+
+    <div class="summary">
+        <div class="card">
+            <h3>Jenis Produk</h3>
+            <p id="jumlahProduk">4</p>
+        </div>
+
+        <div class="card">
+            <h3>Total Transaksi</h3>
+            <p id="jumlahTransaksi">0</p>
+        </div>
+
+        <div class="card">
+            <h3>Total Penjualan</h3>
+            <p id="totalPenjualan">Rp0</p>
+        </div>
+    </div>
+
+    <h2>Daftar Produk</h2>
+    <div class="products" id="daftarProduk"></div>
+
+    <h2>Riwayat Transaksi</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Produk</th>
+                <th>Jumlah</th>
+                <th>Total Harga</th>
+            </tr>
+        </thead>
+        <tbody id="riwayat">
+            <tr>
+                <td colspan="3">Belum ada transaksi.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p class="message" id="pesan"></p>
+</div>
+
+<script>
+const produk = [
+    { nama: "Beras 5 kg", harga: 75000, stok: 10 },
+    { nama: "Minyak Goreng", harga: 18000, stok: 15 },
+    { nama: "Gula Pasir 1 kg", harga: 17000, stok: 12 },
+    { nama: "Telur 1 kg", harga: 29000, stok: 8 }
+];
+
+let transaksi = [];
+let totalPenjualan = 0;
+
+const formatRupiah = angka =>
+    "Rp" + angka.toLocaleString("id-ID");
+
+function tampilkanProduk() {
+    const daftar = document.getElementById("daftarProduk");
+
+    daftar.innerHTML = produk.map((item, index) => `
+        <div class="product">
+            <h3>${item.nama}</h3>
+            <p class="price">${formatRupiah(item.harga)}</p>
+            <p>Stok: <b>${item.stok}</b></p>
+
+            <label for="jumlah${index}">Jumlah pembelian:</label>
+            <input
+                type="number"
+                id="jumlah${index}"
+                min="1"
+                max="${item.stok}"
+                value="1"
+            >
+
+            <button
+                onclick="beliProduk(${index})"
+                ${item.stok === 0 ? "disabled" : ""}
+            >
+                Beli Produk
+            </button>
+        </div>
+    `).join("");
+}
+
+function beliProduk(index) {
+    const jumlahInput =
+        document.getElementById("jumlah" + index);
+
+    const jumlah = Number(jumlahInput.value);
+    const item = produk[index];
+    const pesan = document.getElementById("pesan");
+
+    if (!Number.isInteger(jumlah) || jumlah < 1) {
+        pesan.textContent =
+            "Masukkan jumlah pembelian yang valid.";
+        pesan.style.color = "red";
+        return;
+    }
+
+    if (jumlah > item.stok) {
+        pesan.textContent =
+            "Stok tidak mencukupi!";
+        pesan.style.color = "red";
+        return;
+    }
+
+    const total = jumlah * item.harga;
+
+    item.stok -= jumlah;
+    totalPenjualan += total;
+
+    transaksi.push({
+        nama: item.nama,
+        jumlah: jumlah,
+        total: total
+    });
+
+    pesan.textContent =
+        "Pesanan berhasil diproses!";
+    pesan.style.color = "#087f5b";
+
+    tampilkanProduk();
+    tampilkanTransaksi();
+}
+
+function tampilkanTransaksi() {
+    const tabel = document.getElementById("riwayat");
+
+    if (transaksi.length === 0) {
+        tabel.innerHTML =
+            '<tr><td colspan="3">Belum ada transaksi.</td></tr>';
+    } else {
+        tabel.innerHTML = transaksi.map(item => `
+            <tr>
+                <td>${item.nama}</td>
+                <td>${item.jumlah}</td>
+                <td>${formatRupiah(item.total)}</td>
+            </tr>
+        `).join("");
+    }
+
+    document.getElementById("jumlahProduk").textContent =
+        produk.length;
+
+    document.getElementById("jumlahTransaksi").textContent =
+        transaksi.length;
+
+    document.getElementById("totalPenjualan").textContent =
+        formatRupiah(totalPenjualan);
+}
+
+tampilkanProduk();
+tampilkanTransaksi();
+</script>
+
+</body>
+</html>
